@@ -10,7 +10,7 @@ class TetrisArea internal constructor(val width: Int, val height: Int, private v
         check(width >= 4)
         check(height >= 4)
         check(cells.size == width * height)
-}
+    }
 
     private var currentFigure: FigureWithPosition? = null
 
@@ -27,7 +27,7 @@ class TetrisArea internal constructor(val width: Int, val height: Int, private v
     }
 
     fun tryProceed(): Boolean {
-        return if (tryMove(horizontal = 0, vertical = 1)) {
+        return if (moveFigureDown()) {
             true
         } else {
             removeLines()
@@ -36,16 +36,18 @@ class TetrisArea internal constructor(val width: Int, val height: Int, private v
         }
     }
 
-    fun moveFigureLeft() {
-        tryMove(horizontal = -1, vertical = 0)
-    }
+    fun moveFigureLeft(): Boolean = tryMove(horizontal = -1, vertical = 0)
 
-    fun moveFigureRight() {
-        tryMove(horizontal = 1, vertical = 0)
-    }
+    fun moveFigureRight(): Boolean = tryMove(horizontal = 1, vertical = 0)
 
-    fun moveFigureDown() {
-        tryMove(horizontal = 0, vertical = 1)
+    fun moveFigureDown(): Boolean = tryMove(horizontal = 0, vertical = 1)
+
+    fun moveFigureDownUntilEnd() {
+        while (moveFigureDown()) {
+        }
+        removeLines()
+        currentFigure = null
+        trySpawnFigure()
     }
 
     fun rotateClockwise(): Boolean {
