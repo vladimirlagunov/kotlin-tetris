@@ -2,13 +2,16 @@ package org.github.werehuman.tetris.impl
 
 import java.util.concurrent.ThreadLocalRandom
 
-class TetrisArea constructor(val width: Int, val height: Int) {
+class TetrisArea internal constructor(val width: Int, val height: Int, private val cells: Array<TetrisColor?>) {
+    constructor(width: Int, height: Int)
+            : this(width, height, Array<TetrisColor?>(width * height) { null })
+
     init {
         check(width >= 4)
         check(height >= 4)
-    }
+        check(cells.size == width * height)
+}
 
-    private var cells = Array<TetrisColor?>(width * height) { null }
     private var currentFigure: FigureWithPosition? = null
 
     fun getCell(offset: Int): TetrisColor? = cells[offset]
@@ -27,7 +30,8 @@ class TetrisArea constructor(val width: Int, val height: Int) {
         return if (tryMove(horizontal = 0, vertical = 1)) {
             true
         } else {
-            applyFigure()
+            removeLines()
+            currentFigure = null
             trySpawnFigure()
         }
     }
@@ -156,15 +160,14 @@ class TetrisArea constructor(val width: Int, val height: Int) {
         }
     }
 
-    internal fun applyFigure() {
-        // TODO looks like it removes more lines than needed
+    internal fun removeLines() {
         var offset = width * (height - 1)
         var fromOffset = offset
         while (fromOffset >= 0) {
             var shouldKeepOffset = true
             for (x in 0 until width) {
-                shouldKeepOffset = shouldKeepOffset && (cells[offset] != null)
                 cells[offset] = cells[fromOffset]
+                shouldKeepOffset = shouldKeepOffset && (cells[offset] != null)
                 ++fromOffset
                 ++offset
             }
@@ -175,10 +178,9 @@ class TetrisArea constructor(val width: Int, val height: Int) {
                 offset -= width * 2
             }
         }
-        while (offset >= 0) {
-            cells[offset] = null
-            --offset
+        offset += width
+        while (offset > 0) {
+            cells[--offset] = null
         }
-        currentFigure = null
     }
 }

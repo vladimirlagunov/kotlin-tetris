@@ -10,6 +10,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
+    testImplementation(kotlin("test"))
     testCompile("org.junit.jupiter:junit-jupiter-api:5.+")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:5.+")
 }
