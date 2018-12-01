@@ -37,12 +37,12 @@ class TetrisArea constructor(
 
     fun moveFigureDown(): Boolean = tryMove(horizontal = 0, vertical = 1)
 
-    fun moveFigureDownUntilEnd() {
+    fun moveFigureDownUntilEnd(): Boolean {
         while (moveFigureDown()) {
         }
         removeLines()
         currentFigure = null
-        trySpawnFigure()
+        return trySpawnFigure()
     }
 
     fun rotateClockwise(): Boolean {
