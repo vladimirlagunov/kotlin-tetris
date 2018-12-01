@@ -1,6 +1,8 @@
 package org.github.werehuman.tetris.impl
 
-val COMMON_FIGURES = arrayOf(
+import java.util.concurrent.ThreadLocalRandom
+
+private val COMMON_FIGURES = arrayOf(
         // `L`
         Figure(3, 2, TetrisColor.RED, booleanArrayOf(
                 true, false, false,
@@ -34,3 +36,13 @@ val COMMON_FIGURES = arrayOf(
         // Most desired figure ever
         Figure(1, 4, TetrisColor.WHITE, booleanArrayOf(
                 true, true, true, true)))
+
+
+fun commonFigureFactory(): Figure {
+    val random = ThreadLocalRandom.current()
+    var figure = COMMON_FIGURES[random.nextInt(0, COMMON_FIGURES.size)]
+    for (i in 0 until random.nextInt(0, 4)) {
+        figure = figure.rotateClockwise()
+    }
+    return figure
+}

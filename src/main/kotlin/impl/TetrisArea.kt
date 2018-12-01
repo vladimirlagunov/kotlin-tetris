@@ -1,10 +1,11 @@
 package org.github.werehuman.tetris.impl
 
-import java.util.concurrent.ThreadLocalRandom
-
-class TetrisArea internal constructor(val width: Int, val height: Int, private val cells: Array<TetrisColor?>) {
-    constructor(width: Int, height: Int)
-            : this(width, height, Array<TetrisColor?>(width * height) { null })
+class TetrisArea constructor(
+        val width: Int,
+        val height: Int,
+        // TODO will default cells be shared between all instances?
+        private val cells: Array<TetrisColor?> = Array(width * height) { null },
+        private val figureFactory: () -> Figure = ::commonFigureFactory) {
 
     init {
         check(width >= 4)
@@ -15,12 +16,6 @@ class TetrisArea internal constructor(val width: Int, val height: Int, private v
     private var currentFigure: FigureWithPosition? = null
 
     fun getCell(offset: Int): TetrisColor? = cells[offset]
-
-    fun clear() {
-        for (i in 0 until cells.size) {
-            cells[i] = null
-        }
-    }
 
     fun start() {
         check(trySpawnFigure())
@@ -51,10 +46,7 @@ class TetrisArea internal constructor(val width: Int, val height: Int, private v
     }
 
     fun rotateClockwise(): Boolean {
-        val it = currentFigure
-        if (it == null) {
-            return false
-        }
+        val it = currentFigure ?: return false
         val newFigure = it.rotateClockwise()
         removeFigure()
         if (canSafelyPutFigure(newFigure)) {
@@ -68,12 +60,7 @@ class TetrisArea internal constructor(val width: Int, val height: Int, private v
 
     internal fun trySpawnFigure(): Boolean {
         check(currentFigure == null)
-        val random = ThreadLocalRandom.current()
-        var figure = COMMON_FIGURES[random.nextInt(0, COMMON_FIGURES.size)]
-        for (i in 0 until random.nextInt(0, 4)) {
-            figure = figure.rotateClockwise()
-        }
-        return tryAddFigure(figure)
+        return tryAddFigure(figureFactory.invoke())
     }
 
     internal fun tryAddFigure(figure: Figure): Boolean {
@@ -92,7 +79,7 @@ class TetrisArea internal constructor(val width: Int, val height: Int, private v
     }
 
     internal fun canSafelyPutFigure(info: FigureWithPosition): Boolean {
-        if (info.left < 0 || info.left + info.figure.width > width || info.top < 0 || info.top + info.figure.height >= height) {
+        if (info.left < 0 || info.left + info.figure.width > width || info.top < 0 || info.top + info.figure.height > height) {
             return false
         }
         var offset = info.left + info.top * width
@@ -127,10 +114,7 @@ class TetrisArea internal constructor(val width: Int, val height: Int, private v
     }
 
     internal fun removeFigure() {
-        val it = currentFigure
-        if (it == null) {
-            return
-        }
+        val it = currentFigure ?: return
         var offset = it.left + it.top * width
         var figureOffset = 0
         for (y in 0 until it.figure.height) {
@@ -147,10 +131,7 @@ class TetrisArea internal constructor(val width: Int, val height: Int, private v
     }
 
     internal fun tryMove(horizontal: Int = 0, vertical: Int = 0): Boolean {
-        val it = currentFigure
-        if (it == null) {
-            return true
-        }
+        val it = currentFigure ?: return true
         val candidate = FigureWithPosition(it.figure, left = it.left + horizontal, top = it.top + vertical)
         removeFigure()
         if (canSafelyPutFigure(candidate)) {

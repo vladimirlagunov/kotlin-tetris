@@ -1,10 +1,10 @@
 package org.github.werehuman.tetris.impl
 
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 
-fun areaFromString(view: String): TetrisArea {
+fun areaFromString(view: String, figureFactory: () -> Figure = TODO()): TetrisArea {
     val lines = view.lines()
     val width = lines[0].length
     val height = lines.size
@@ -25,7 +25,7 @@ fun areaFromString(view: String): TetrisArea {
             }
         }
     }
-    return TetrisArea(width, height, cells)
+    return TetrisArea(width, height, cells, figureFactory)
 }
 
 
@@ -49,6 +49,10 @@ fun stringFromArea(area: TetrisArea): String {
     }
     return result.toString().trim()
 }
+
+val TEST_FIGURE = Figure(3, 2, TetrisColor.RED, booleanArrayOf(
+        false, true, true,
+        true, true, false))
 
 
 class TetrisAreaTest {
@@ -79,5 +83,63 @@ class TetrisAreaTest {
         val area = areaFromString(initial)
         area.removeLines()
         assertEquals(expected, stringFromArea(area))
+    }
+
+    @Test
+    fun proceedUntilEnd() {
+        val area = areaFromString(
+                """
+                |.....
+                |.....
+                |.....
+                |.....
+                """.trimMargin(),
+                { TEST_FIGURE })
+
+        assertTrue(area.trySpawnFigure())
+
+        assertEquals(
+                """
+                |..RR.
+                |.RR..
+                |.....
+                |.....
+                """.trimMargin(),
+                stringFromArea(area))
+
+        assertTrue(area.tryProceed())
+
+        assertEquals(
+                """
+                |.....
+                |..RR.
+                |.RR..
+                |.....
+                """.trimMargin(),
+                stringFromArea(area))
+
+        assertTrue(area.tryProceed())
+
+        assertEquals(
+                """
+                |.....
+                |.....
+                |..RR.
+                |.RR..
+                """.trimMargin(),
+                stringFromArea(area))
+
+        assertTrue(area.tryProceed())
+
+        assertEquals(
+                """
+                |..RR.
+                |.RR..
+                |..RR.
+                |.RR..
+                """.trimMargin(),
+                stringFromArea(area))
+
+        assertFalse(area.tryProceed())
     }
 }

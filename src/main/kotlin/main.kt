@@ -2,8 +2,7 @@ package org.github.werehuman.tetris
 
 import org.github.werehuman.tetris.impl.TetrisArea
 import org.github.werehuman.tetris.impl.TetrisColor
-import java.awt.Color
-import java.awt.Graphics
+import java.awt.*
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import java.util.concurrent.atomic.AtomicBoolean
@@ -15,18 +14,34 @@ import javax.swing.WindowConstants
 import kotlin.system.exitProcess
 
 
-class SwingTetrisAreaDrawer(private val area: TetrisArea, private val cellSize: Int, private val cellPadding: Int) {
-    init {
-        check(cellPadding > 0)
-        check(cellSize > cellPadding)
+class SwingTetrisAreaDrawer(private val area: TetrisArea) {
+    private val borderSize: Int = 2
+
+    private data class Clipping(val cellSize: Int, val cellPadding: Int, val marginLeft: Int, val marginTop: Int)
+
+    private fun calculateClipping(bounds: Rectangle): Clipping {
+        val cellSize = Math.min((bounds.width - borderSize * 2) / area.width, bounds.height / area.height)
+        return Clipping(
+                cellSize = cellSize,
+                cellPadding = (cellSize * 0.1).toInt(),
+                marginLeft = bounds.x + Math.max(0, (bounds.width - area.width * cellSize) / 2 - borderSize),
+                marginTop = bounds.y + Math.max(0, (bounds.height - area.height * cellSize) / 2 - borderSize))
     }
 
-    val pxWidth = area.width * cellSize + cellPadding
-    val pxHeight = area.height * cellSize + cellPadding
+    fun draw(graphics: Graphics2D) {
+        val bounds = graphics.clipBounds
+        val (cellSize, cellPadding, marginLeft, marginTop) = calculateClipping(bounds)
+        val pxWidth = area.width * cellSize + cellPadding
+        val pxHeight = area.height * cellSize + cellPadding
 
-    fun draw(graphics: Graphics) {
         graphics.color = Color.black
-        graphics.fillRect(0, 0, pxWidth, pxHeight)
+        graphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height)
+
+        graphics.stroke = BasicStroke(borderSize.toFloat())
+        graphics.color = Color.gray
+        graphics.drawRect(marginLeft + borderSize / 2, marginTop + borderSize / 2, pxWidth + borderSize, pxHeight + borderSize)
+
+        graphics.stroke = BasicStroke(1.0f)
 
         var cellPosition = 0
         for (y in 0 until area.height) {
@@ -42,8 +57,8 @@ class SwingTetrisAreaDrawer(private val area: TetrisArea, private val cellSize: 
                         TetrisColor.WHITE -> Color.WHITE
                     }
                     graphics.fillRect(
-                            x * cellSize + cellPadding,
-                            y * cellSize + cellPadding,
+                            x * cellSize + cellPadding + marginLeft + borderSize,
+                            y * cellSize + cellPadding + marginTop + borderSize,
                             cellSize - cellPadding,
                             cellSize - cellPadding)
                 }
@@ -60,9 +75,8 @@ fun main(args: Array<String>) {
     JFrame.setDefaultLookAndFeelDecorated(true)
     val frame = JFrame("Tetris")
     frame.defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
-    frame.isResizable = false
-    val drawer = SwingTetrisAreaDrawer(area, 30, 2)
-    frame.setSize(drawer.pxWidth, drawer.pxHeight)
+    val drawer = SwingTetrisAreaDrawer(area)
+    frame.setSize(400, 800)
 
     val monitor = object {}
 
@@ -112,10 +126,15 @@ fun main(args: Array<String>) {
         override fun keyTyped(e: KeyEvent) {}
     })
     frame.add(object : JPanel() {
-        override fun paintComponent(g: Graphics) = drawer.draw(g)
+        override fun paintComponent(g: Graphics) {
+            if (g is Graphics2D) {
+                drawer.draw(g)
+            }
+        }
     })
 
     val thread = Thread {
+        // TODO move logic into impl
         var stepsBetweenProceeding = 10
         var stepFromLastProceed = 0
         var totalProceeds = 0
