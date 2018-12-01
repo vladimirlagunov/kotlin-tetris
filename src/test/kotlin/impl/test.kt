@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 
-fun areaFromString(view: String, figureFactory: () -> Figure = TODO()): TetrisArea {
+fun areaFromString(view: String, figureFactory: () -> Figure = { TODO() }): TetrisArea {
     val lines = view.lines()
     val width = lines[0].length
     val height = lines.size

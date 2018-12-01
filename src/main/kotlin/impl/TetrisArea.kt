@@ -35,7 +35,7 @@ class TetrisArea constructor(
 
     fun moveFigureRight(): Boolean = tryMove(horizontal = 1, vertical = 0)
 
-    fun moveFigureDown(): Boolean = tryMove(horizontal = 0, vertical = 1)
+    private fun moveFigureDown(): Boolean = tryMove(horizontal = 0, vertical = 1)
 
     fun moveFigureDownUntilEnd(): Boolean {
         while (moveFigureDown()) {
