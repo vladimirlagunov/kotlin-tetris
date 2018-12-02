@@ -1,4 +1,4 @@
-package org.github.werehuman.tetris.impl
+package com.github.werehuman.tetris.impl
 
 class TetrisArea constructor(
         val width: Int,

@@ -1,4 +1,4 @@
-package org.github.werehuman.tetris.impl
+package com.github.werehuman.tetris.impl
 
 enum class TetrisColor {
     RED, YELLOW, GREEN, BLUE, MAGENTA, CYAN, WHITE

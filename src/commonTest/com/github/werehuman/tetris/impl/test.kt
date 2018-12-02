@@ -1,8 +1,9 @@
-package org.github.werehuman.tetris.impl
+package com.github.werehuman.tetris.impl
 
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
-
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 fun areaFromString(view: String, figureFactory: () -> Figure = { TODO() }): TetrisArea {
     val lines = view.lines()
@@ -55,7 +56,7 @@ val TEST_FIGURE = Figure(3, 2, TetrisColor.RED, booleanArrayOf(
         true, true, false))
 
 
-class TetrisAreaTest {
+class TestTetrisArea {
     @Test
     fun removeLines1() {
         val initial = """

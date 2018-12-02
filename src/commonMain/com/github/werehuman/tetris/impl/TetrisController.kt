@@ -1,23 +1,24 @@
-package org.github.werehuman.tetris.impl
+package com.github.werehuman.tetris.impl
 
-import java.time.Duration
+import kotlin.jvm.Volatile
+import kotlin.math.max
 
-internal class DelayDurationGenerator(counts: Iterable<Pair<Duration, Int>>, private val lastDuration: Duration) {
+internal class DelayDurationGenerator(counts: Iterable<Pair<Long, Int>>, private val lastDurationMillis: Long) {
     private val countsIterator = counts.iterator()
-    private var duration: Duration = Duration.ZERO
+    private var durationMillis: Long = 0
     private var count: Int = 0
 
-    fun get(): Duration {
+    fun getMillis(): Long {
         if (count-- == 0) {
             if (countsIterator.hasNext()) {
                 val tmp = countsIterator.next()
-                duration = tmp.component1()
+                durationMillis = tmp.component1()
                 count = tmp.component2()
             } else {
-                duration = lastDuration
+                durationMillis = lastDurationMillis
             }
         }
-        return duration
+        return durationMillis
     }
 }
 
@@ -29,59 +30,57 @@ enum class CurrentAction(internal val debounce: Boolean) {
     Rotate(true),
 }
 
-class TetrisController constructor(val width: Int, val height: Int, now: Duration) {
+class TetrisController constructor(val width: Int, val height: Int, nowMillis: Long) {
     private val area = TetrisArea(10, 20)
-    private val cycleDuration = Duration.ofMillis(10)
-    private val bouncingActionCycle = Duration.ofMillis(100)
+    private val cycleDurationMillis = 10L
+    private val bouncingActionCycleMillis = 100L
     private val durationGenerator = DelayDurationGenerator(
             arrayListOf(
-                    Duration.ofMillis(800) to 20,
-                    Duration.ofMillis(700) to 40,
-                    Duration.ofMillis(600) to 80,
-                    Duration.ofMillis(500) to 160,
-                    Duration.ofMillis(400) to 320),
-            Duration.ofMillis(300))
+                    800L to 20,
+                    700L to 40,
+                    600L to 80,
+                    500L to 160,
+                    400L to 320),
+            300L)
 
-    private var nextCycle = Duration.ZERO
+    private var nextCycle = 0L
 
     @Volatile
     var pressedAction: CurrentAction? = null
 
     private var debouncingAction: CurrentAction? = null
-    private var nextBouncingAction = Duration.ZERO
+    private var nextBouncingActionMillis = 0L
 
     init {
         area.start()
-        updateDelayDuration(now)
+        updateDelayDuration(nowMillis)
     }
 
-    private fun getDelayDuration(now: Duration): Duration {
-        val result = nextCycle.minus(now).let {
-            if (it.isNegative) Duration.ZERO else it
-        }
+    private fun getDelayDuration(nowMillis: Long): Long {
+        val result = max(0, nextCycle - nowMillis)
         return when {
-            result > cycleDuration -> cycleDuration
-            result.isNegative -> Duration.ZERO
+            result > cycleDurationMillis -> cycleDurationMillis
+            result < 0 -> 0
             else -> result
         }
     }
 
-    private fun updateDelayDuration(now: Duration) {
-        nextCycle = now.plus(durationGenerator.get())
+    private fun updateDelayDuration(nowMillis: Long) {
+        nextCycle = nowMillis + durationGenerator.getMillis()
     }
 
     fun getCell(offset: Int): TetrisColor? = area.getCell(offset)
 
-    data class ProceedResult(val delay: Duration, val changed: Boolean)
+    data class ProceedResult(val delayMillis: Long, val changed: Boolean)
 
-    fun proceed(now: Duration): ProceedResult? {
+    fun proceed(nowMillis: Long): ProceedResult? {
         val action = pressedAction
         var resultChanged = false
         if (action != null) {
             val canCheck = if (action.debounce) {
                 debouncingAction != action
             } else {
-                nextBouncingAction <= now
+                nextBouncingActionMillis <= nowMillis
             }
             if (canCheck) {
                 resultChanged = when (action) {
@@ -95,7 +94,7 @@ class TetrisController constructor(val width: Int, val height: Int, now: Duratio
                     }
                     CurrentAction.Rotate -> area.rotateClockwise()
                     CurrentAction.DownUntilEnd -> {
-                        updateDelayDuration(now)
+                        updateDelayDuration(nowMillis)
                         if (!area.moveFigureDownUntilEnd()) {
                             return null
                         }
@@ -105,23 +104,23 @@ class TetrisController constructor(val width: Int, val height: Int, now: Duratio
             }
             if (action.debounce) {
                 debouncingAction = action
-                nextBouncingAction = Duration.ZERO
+                nextBouncingActionMillis = 0
             } else if (resultChanged) {
                 debouncingAction = null
-                nextBouncingAction = now.plus(bouncingActionCycle)
+                nextBouncingActionMillis = nowMillis + bouncingActionCycleMillis
             }
         } else {
             debouncingAction = null
-            nextBouncingAction = Duration.ZERO
+            nextBouncingActionMillis = 0
         }
-        if (nextCycle <= now) {
+        if (nextCycle <= nowMillis) {
             resultChanged = true
             if (area.tryProceed()) {
-                updateDelayDuration(now)
+                updateDelayDuration(nowMillis)
             } else {
                 return null
             }
         }
-        return ProceedResult(getDelayDuration(now), resultChanged)
+        return ProceedResult(getDelayDuration(nowMillis), resultChanged)
     }
 }

@@ -1,0 +1,53 @@
+plugins {
+    id 'kotlin-multiplatform' version '1.3.10'
+}
+repositories {
+    mavenCentral()
+}
+
+kotlin {
+    targets {
+        fromPreset(presets.jvm, 'jvm')
+        //fromPreset(presets.js, 'js')
+    }
+    sourceSets {
+        commonMain {
+            kotlin.srcDir('src/commonMain')
+            dependencies {
+                implementation 'org.jetbrains.kotlin:kotlin-stdlib-common'
+            }
+        }
+        commonTest {
+            kotlin.srcDir('src/commonTest')
+            dependencies {
+                implementation 'org.jetbrains.kotlin:kotlin-test-common'
+                implementation 'org.jetbrains.kotlin:kotlin-test-annotations-common'
+            }
+        }
+        jvmMain {
+            kotlin.srcDir('src/jvmMain')
+            dependencies {
+                implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+            }
+        }
+        jvmTest {
+            kotlin.srcDir('src/jvmTest')
+            dependencies {
+                implementation 'org.jetbrains.kotlin:kotlin-test'
+                implementation 'org.jetbrains.kotlin:kotlin-test-junit'
+            }
+        }
+//        jsMain {
+//            kotlin.srcDir('src/jsMain')
+//            dependencies {
+//                implementation 'org.jetbrains.kotlin:kotlin-stdlib-js'
+//            }
+//        }
+//        jsTest {
+//            kotlin.srcDir('src/jsTest')
+//            dependencies {
+//                implementation 'org.jetbrains.kotlin:kotlin-test-js'
+//            }
+//        }
+    }
+}
