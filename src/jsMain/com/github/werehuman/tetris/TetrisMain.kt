@@ -6,7 +6,6 @@ import com.github.werehuman.tetris.impl.TetrisController
 import org.w3c.dom.*
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.KeyboardEvent
-import org.w3c.dom.events.MouseEvent
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -82,32 +81,30 @@ private fun repaint(controller: TetrisController, clipping: Clipping, canvasCtx:
     }
 }
 
-private class MouseTracker constructor(
-    event: MouseEvent,
+private class TouchTracker constructor(
+    private val startX: Int, private val startY: Int,
     private val controller: TetrisController,
     clipping: Clipping
 ) {
     private val pxThreshold = min(controller.width, controller.height) * clipping.cellSize / 5
     private val millisThreshold = 500
-    private val startX: Int = event.clientX
-    private val startY: Int = event.clientY
     private val startMillis = milliTime()
 
-    fun onMove(event: MouseEvent): CurrentAction? {
+    fun onMove(clientX: Int, clientY: Int): CurrentAction? {
         return when {
-            event.clientX <= startX - pxThreshold -> CurrentAction.Left
-            event.clientX >= startX + pxThreshold -> CurrentAction.Right
-            event.clientY >= startY + pxThreshold -> CurrentAction.Down
+            clientX <= startX - pxThreshold -> CurrentAction.Left
+            clientX >= startX + pxThreshold -> CurrentAction.Right
+            clientY >= startY + pxThreshold -> CurrentAction.Down
             else -> null
         }
     }
 
-    fun onUp(event: MouseEvent): CurrentAction? {
+    fun onUp(clientX: Int, clientY: Int): CurrentAction? {
         if (milliTime() - startMillis < millisThreshold) {
-            if (controller.pressedAction == null && abs(event.clientX - startX) < pxThreshold) {
+            if (controller.pressedAction == null && abs(clientX - startX) < pxThreshold) {
                 return CurrentAction.Rotate
             }
-            if (event.clientY >= startY + pxThreshold * 2) {
+            if (clientY >= startY + pxThreshold * 2) {
                 return CurrentAction.DownUntilEnd
             }
         }
@@ -182,31 +179,40 @@ actual object TetrisMain {
             }
         }
 
-        var mouseTracker: MouseTracker? = null
+        var touchTracker: TouchTracker? = null
 
-        win.onmousedown = { e: Event ->
+        win.addEventListener("touchstart", { e: dynamic ->
             e.stopPropagation()
-            mouseTracker = MouseTracker(e as MouseEvent, controller, clipping)
+            touchTracker = TouchTracker(
+                (e.layerX as Number).toInt(),
+                (e.layerY as Number).toInt(),
+                controller, clipping
+            )
             controller.pressedAction = null
             null.asDynamic()
-        }
+        })
 
-        win.onmousemove = { e: Event ->
+        win.addEventListener("touchmove", { e: dynamic ->
             e.stopPropagation()
-            mouseTracker?.let {
-                controller.pressedAction = it.onMove(e as MouseEvent)
+            touchTracker?.let {
+                controller.pressedAction = it.onMove(
+                    (e.layerX as Number).toInt(),
+                    (e.layerY as Number).toInt()
+                )
             }
             null.asDynamic()
-        }
+        })
 
-        win.onmouseup = { e: Event ->
+        win.addEventListener("touchend", { e: dynamic ->
             e.stopPropagation()
-            mouseTracker?.let {
-                controller.pressedAction = it.onUp(e as MouseEvent)
+            touchTracker?.let {
+                controller.pressedAction = it.onUp(
+                    (e.layerX as Number).toInt(),
+                    (e.layerY as Number).toInt())
             }
-            mouseTracker = null
+            touchTracker = null
             null.asDynamic()
-        }
+        })
 
         resizeCanvas(controller, clipping, canvas)
         repaint(controller, clipping, canvasCtx)
