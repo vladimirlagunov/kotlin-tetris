@@ -87,24 +87,51 @@ private class TouchTracker constructor(
     clipping: Clipping
 ) {
     private val pxThreshold = min(controller.width, controller.height) * clipping.cellSize / 5
+    private val cellSize = clipping.cellSize
     private val millisThreshold = 500
     private val startMillis = milliTime()
+    private var currentCellOffsetX = 0
+    private var desiredCellOffsetX = 0
+    private var preventRotation = false
 
     fun onMove(clientX: Int, clientY: Int): CurrentAction? {
+        val xOffset = abs(clientX - startX)
+        val yOffset = abs(clientY - startY)
+        return if (xOffset < yOffset && clientY >= startY + pxThreshold) {
+            preventRotation = true
+            CurrentAction.Down
+        } else {
+            desiredCellOffsetX = (clientX - startX) / cellSize
+            moveHorizontal()
+        }
+    }
+
+    private fun moveHorizontal(): CurrentAction? {
         return when {
-            clientX <= startX - pxThreshold -> CurrentAction.Left
-            clientX >= startX + pxThreshold -> CurrentAction.Right
-            clientY >= startY + pxThreshold -> CurrentAction.Down
+            desiredCellOffsetX < currentCellOffsetX -> {
+                --currentCellOffsetX
+                preventRotation = true
+                CurrentAction.Left
+            }
+            currentCellOffsetX < desiredCellOffsetX -> {
+                ++currentCellOffsetX
+                preventRotation = true
+                CurrentAction.Right
+            }
             else -> null
         }
     }
 
+    fun onNothing(): CurrentAction? {
+        return moveHorizontal()
+    }
+
     fun onUp(clientX: Int, clientY: Int): CurrentAction? {
         if (milliTime() - startMillis < millisThreshold) {
-            if (controller.pressedAction == null && abs(clientX - startX) < pxThreshold) {
+            if (!preventRotation && abs(clientX - startX) < pxThreshold) {
                 return CurrentAction.Rotate
             }
-            if (clientY >= startY + pxThreshold * 2) {
+            if (clientY >= startY + pxThreshold) {
                 return CurrentAction.DownUntilEnd
             }
         }
@@ -126,9 +153,14 @@ actual object TetrisMain {
         style.innerHTML = """
         body {
             background: black;
+            height: 100%;
             margin: 0;
+            overflow: hidden;
             padding: 0;
-        }
+            position: fixed;
+            touch-action: none;
+            width: 100%;
+         }
         #tetris_canvas {
             padding: 0;
             border: 0;
@@ -182,7 +214,7 @@ actual object TetrisMain {
         var touchTracker: TouchTracker? = null
 
         win.addEventListener("touchstart", { e: dynamic ->
-            e.stopPropagation()
+            e.preventDefault()
             touchTracker = TouchTracker(
                 (e.layerX as Number).toInt(),
                 (e.layerY as Number).toInt(),
@@ -193,7 +225,7 @@ actual object TetrisMain {
         })
 
         win.addEventListener("touchmove", { e: dynamic ->
-            e.stopPropagation()
+            e.preventDefault()
             touchTracker?.let {
                 controller.pressedAction = it.onMove(
                     (e.layerX as Number).toInt(),
@@ -204,11 +236,12 @@ actual object TetrisMain {
         })
 
         win.addEventListener("touchend", { e: dynamic ->
-            e.stopPropagation()
+            e.preventDefault()
             touchTracker?.let {
                 controller.pressedAction = it.onUp(
                     (e.layerX as Number).toInt(),
-                    (e.layerY as Number).toInt())
+                    (e.layerY as Number).toInt()
+                )
             }
             touchTracker = null
             null.asDynamic()
@@ -221,6 +254,9 @@ actual object TetrisMain {
             controller.proceed(milliTime())?.let { (durationMillis, changed) ->
                 if (changed) {
                     repaint(controller, calculateClipping(controller, win), canvasCtx)
+                }
+                touchTracker?.let {
+                    controller.pressedAction = it.onNothing()
                 }
                 win.setTimeout({ worker() }, durationMillis.toInt())
             }
