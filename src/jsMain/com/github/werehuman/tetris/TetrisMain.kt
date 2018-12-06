@@ -159,6 +159,7 @@ actual object TetrisMain {
 
         win.onkeydown = { e: Event ->
             check(e is KeyboardEvent)
+            e.stopPropagation()
             when (e.keyCode) {
                 keyDown -> controller.pressedAction = CurrentAction.Down
                 keyLeft -> controller.pressedAction = CurrentAction.Left
@@ -170,6 +171,7 @@ actual object TetrisMain {
 
         win.onkeyup = { e: Event ->
             check(e is KeyboardEvent)
+            e.stopPropagation()
             when (e.keyCode) {
                 keyDown,
                 keyLeft,
@@ -183,12 +185,14 @@ actual object TetrisMain {
         var mouseTracker: MouseTracker? = null
 
         win.onmousedown = { e: Event ->
+            e.stopPropagation()
             mouseTracker = MouseTracker(e as MouseEvent, controller, clipping)
             controller.pressedAction = null
             null.asDynamic()
         }
 
         win.onmousemove = { e: Event ->
+            e.stopPropagation()
             mouseTracker?.let {
                 controller.pressedAction = it.onMove(e as MouseEvent)
             }
@@ -196,6 +200,7 @@ actual object TetrisMain {
         }
 
         win.onmouseup = { e: Event ->
+            e.stopPropagation()
             mouseTracker?.let {
                 controller.pressedAction = it.onUp(e as MouseEvent)
             }
