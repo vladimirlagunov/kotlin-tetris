@@ -3,9 +3,7 @@ package com.github.werehuman.tetris
 import com.github.werehuman.tetris.impl.CurrentAction
 import com.github.werehuman.tetris.impl.TetrisColor
 import com.github.werehuman.tetris.impl.TetrisController
-import org.w3c.dom.CanvasRenderingContext2D
-import org.w3c.dom.HTMLCanvasElement
-import org.w3c.dom.Window
+import org.w3c.dom.*
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.KeyboardEvent
 import org.w3c.dom.events.MouseEvent
@@ -122,9 +120,34 @@ actual object TetrisMain {
         val controller = TetrisController(width, height, milliTime())
 
         val win = js("window") as Window
-        val canvas = js("document").getElementById("tetris_canvas") as HTMLCanvasElement
+        val doc = js("document") as Document
+        val body = doc.body ?: throw IllegalStateException("No body in html")
+
+        doc.title = "Kotlin Tetris"
+
+        val style = doc.createElement("style") as HTMLStyleElement
+        style.innerHTML = """
+        body {
+            background: black;
+            margin: 0;
+            padding: 0;
+        }
+        #tetris_canvas {
+            padding: 0;
+            border: 0;
+            margin: 0 auto;
+            display: block;
+        }
+        """.trimIndent()
+
+        body.appendChild(style)
+
+        val canvas = doc.createElement("canvas") as HTMLCanvasElement
+        canvas.id = "tetris_canvas"
         val canvasCtx = (canvas.getContext("2d") as CanvasRenderingContext2D?)
             ?: throw IllegalStateException("Can't create canvas context")
+
+        body.appendChild(canvas)
 
         var clipping = calculateClipping(controller, win)
 
