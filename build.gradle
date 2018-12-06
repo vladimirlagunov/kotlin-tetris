@@ -8,7 +8,7 @@ repositories {
 kotlin {
     targets {
         fromPreset(presets.jvm, 'jvm')
-        //fromPreset(presets.js, 'js')
+        fromPreset(presets.js, 'js')
     }
     sourceSets {
         commonMain {
@@ -37,17 +37,18 @@ kotlin {
                 implementation 'org.jetbrains.kotlin:kotlin-test-junit'
             }
         }
-//        jsMain {
-//            kotlin.srcDir('src/jsMain')
-//            dependencies {
-//                implementation 'org.jetbrains.kotlin:kotlin-stdlib-js'
-//            }
-//        }
-//        jsTest {
-//            kotlin.srcDir('src/jsTest')
-//            dependencies {
-//                implementation 'org.jetbrains.kotlin:kotlin-test-js'
-//            }
-//        }
+        jsMain {
+            kotlin.srcDir('src/jsMain')
+            resources.srcDir('res/jsMain')
+            dependencies {
+                implementation 'org.jetbrains.kotlin:kotlin-stdlib-js'
+            }
+        }
+        jsTest {
+            kotlin.srcDir('src/jsTest')
+            dependencies {
+                implementation 'org.jetbrains.kotlin:kotlin-test-js'
+            }
+        }
     }
 }

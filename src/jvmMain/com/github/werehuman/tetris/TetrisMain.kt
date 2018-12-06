@@ -17,7 +17,7 @@ class SwingTetrisAreaDrawer(private val controller: TetrisController) {
     private data class Clipping(val cellSize: Int, val cellPadding: Int, val marginLeft: Int, val marginTop: Int)
 
     private fun calculateClipping(bounds: Rectangle): Clipping {
-        val cellSize = Math.min((bounds.width - borderSize * 2) / controller.width, bounds.height / controller.height)
+        val cellSize = Math.min((bounds.width - borderSize * 2) / controller.width, bounds.height / controller.height)  // TODO borderSize for height
         return Clipping(
                 cellSize = cellSize,
                 cellPadding = (cellSize * 0.1).toInt(),
