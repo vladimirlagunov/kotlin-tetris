@@ -1,11 +1,15 @@
 package com.github.werehuman.tetris.impl
 
+import kotlin.math.max
+import kotlin.math.min
+
 class TetrisArea constructor(
-        val width: Int,
-        val height: Int,
-        // TODO will default cells be shared between all instances?
-        private val cells: Array<TetrisColor?> = Array(width * height) { null },
-        private val figureFactory: () -> Figure = ::commonFigureFactory) {
+    val width: Int,
+    val height: Int,
+    // TODO will default cells be shared between all instances?
+    private val cells: Array<TetrisColor?> = Array(width * height) { null },
+    private val figureFactory: () -> Figure = ::commonFigureFactory
+) {
 
     init {
         check(width >= 4)
@@ -46,14 +50,19 @@ class TetrisArea constructor(
     }
 
     fun rotateClockwise(): Boolean {
-        val it = currentFigure ?: return false
-        val newFigure = it.rotateClockwise()
+        val oldFigure = currentFigure ?: return false
+        val newFigure = oldFigure.rotateClockwise().let {
+            FigureWithPosition(
+                figure = it.figure,
+                top = it.top,
+                left = max(0, min(width - it.figure.width, it.left)))
+        }
         removeFigure()
         if (canSafelyPutFigure(newFigure)) {
             putFigure(newFigure)
             return true
         } else {
-            putFigure(it)
+            putFigure(oldFigure)
             return false
         }
     }
@@ -65,9 +74,9 @@ class TetrisArea constructor(
 
     internal fun tryAddFigure(figure: Figure): Boolean {
         val candidate = FigureWithPosition(
-                figure,
-                top = 0,
-                left = (width - figure.width) / 2  // when figure.width is even then shift to one cell left
+            figure,
+            top = 0,
+            left = (width - figure.width) / 2  // when figure.width is even then shift to one cell left
         )
 
         if (canSafelyPutFigure(candidate)) {
