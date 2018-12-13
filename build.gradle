@@ -1,4 +1,5 @@
 plugins {
+    id 'de.solugo.gradle.nodejs' version '0.6.0'
     id 'kotlin-multiplatform' version '1.3.10'
 }
 repositories {
@@ -68,5 +69,76 @@ task fatJar(type: Jar) {
                 + compileKotlinJvm.outputs.files
                 + jvmMainClasses.outputs.files)
                 .collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+
+task jsMinifiedDir {
+    ext.path = "${buildDir}/minified"
+    outputs.dir(ext.path)
+    doLast {
+        mkdir(ext.path)
+    }
+}
+
+Closure makeJsTerserTask(String outFileName, Closure getSrcs) {
+    return {
+        dependsOn jsMinifiedDir
+
+        def inputFiles = getSrcs()
+        if (inputFiles.size() == 0) {
+            throw new IllegalStateException("No input files")
+        }
+
+        def outFile = "${jsMinifiedDir.ext.path}/${outFileName}.js"
+        outputs.file(outFile)
+
+        require = ['terser']
+        executable = 'npx'
+        args = ['terser', '--output', outFile]
+        args += inputFiles
+    }
+}
+
+tasks.create(name: 'jsMinifiedStdlib', type: NodeJsTask, makeJsTerserTask('stdlib') {
+    configurations.jsMainImplementation.collect() {
+        zipTree(it.absolutePath)
+                .grep { it.path.endsWith(".js") }
+                .collect { it.absolutePath }
+    }.flatten()
+})
+tasks.create(name: 'jsMinifiedApp', type: NodeJsTask, dependsOn: compileKotlinJs, makeJsTerserTask('app') {
+    Collections.singletonList(compileKotlinJs.outputFile)
+})
+
+task indexHtml {
+    dependsOn jsMinifiedStdlib
+    dependsOn jsMinifiedApp
+
+    def destinationFile = "${buildDir}/index.html"
+    outputs.file(destinationFile)
+
+    def cat = { File src, Writer dst ->
+        def reader = src.absoluteFile.newReader()
+        try {
+            reader.lines().each {
+                dst.write(it)
+            }
+        } finally {
+            reader.close()
+        }
+    }
+
+    doLast {
+        file(destinationFile).withWriter { Writer dst ->
+            dst.write('<!DOCTYPE html>')
+            dst.write('<html><head>')
+            dst.write('<meta charset="UTF-8" />')
+            dst.write('<title>Kotlin Tetris</title>')
+            dst.write('</head><body><script type="text/javascript">')
+            jsMinifiedStdlib.outputs.each { it.files.each { cat it, dst } }
+            jsMinifiedApp.outputs.each { it.files.each { cat it, dst } }
+            dst.write('</script></body></html>')
+        }
     }
 }
