@@ -54,7 +54,7 @@ class TetrisArea constructor(
         val newFigure = oldFigure.rotateClockwise().let {
             FigureWithPosition(
                 figure = it.figure,
-                top = it.top,
+                top = max(0, min(height - it.figure.height, it.top)),
                 left = max(0, min(width - it.figure.width, it.left)))
         }
         removeFigure()
