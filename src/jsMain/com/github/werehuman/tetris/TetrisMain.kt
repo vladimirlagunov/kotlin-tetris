@@ -20,8 +20,8 @@ const val keyUp = 38
 private data class Clipping(val cellSize: Int, val cellPadding: Int)
 
 private fun calculateClipping(controller: TetrisController, win: Window): Clipping {
-    val width = win.innerWidth as Int
-    val height = win.innerHeight as Int
+    val width = win.innerWidth
+    val height = win.innerHeight
     val cellSize = kotlin.math.min(
         (width - borderSize * 2) / controller.width,
         (height - borderSize * 2) / controller.height
