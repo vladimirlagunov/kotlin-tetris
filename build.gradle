@@ -83,8 +83,6 @@ task jsMinifiedDir {
 
 Closure makeJsTerserTask(String outFileName, Closure getSrcs) {
     return {
-        dependsOn jsMinifiedDir
-
         def inputFiles = getSrcs()
         if (inputFiles.size() == 0) {
             throw new IllegalStateException("No input files")
@@ -100,20 +98,19 @@ Closure makeJsTerserTask(String outFileName, Closure getSrcs) {
     }
 }
 
-tasks.create(name: 'jsMinifiedStdlib', type: NodeJsTask, makeJsTerserTask('stdlib') {
+tasks.create(name: 'jsMinifiedStdlib', type: NodeJsTask, dependsOn: [jsMinifiedDir], makeJsTerserTask('stdlib') {
     configurations.jsMainImplementation.collect() {
         zipTree(it.absolutePath)
                 .grep { it.path.endsWith(".js") }
                 .collect { it.absolutePath }
     }.flatten()
 })
-tasks.create(name: 'jsMinifiedApp', type: NodeJsTask, dependsOn: compileKotlinJs, makeJsTerserTask('app') {
+tasks.create(name: 'jsMinifiedApp', type: NodeJsTask, dependsOn: [jsMinifiedDir, jsMainClasses], makeJsTerserTask('app') {
     Collections.singletonList(compileKotlinJs.outputFile)
 })
 
 task indexHtml {
-    dependsOn jsMinifiedStdlib
-    dependsOn jsMinifiedApp
+    dependsOn jsMinifiedStdlib, jsMinifiedApp
 
     def destinationFile = "${buildDir}/index.html"
     outputs.file(destinationFile)
@@ -140,5 +137,7 @@ task indexHtml {
             jsMinifiedApp.outputs.each { it.files.each { cat it, dst } }
             dst.write('</script></body></html>')
         }
+
+        println "file://${destinationFile}"
     }
 }

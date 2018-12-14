@@ -9,7 +9,8 @@ import org.w3c.dom.events.KeyboardEvent
 import kotlin.math.abs
 import kotlin.math.min
 
-const val borderSize: Int = 2
+const val borderSize: Int = 3
+const val paddingFraction: Double = 0.1
 const val keyDown = 40
 const val keyLeft = 37
 const val keyRight = 39
@@ -23,18 +24,16 @@ private fun calculateClipping(controller: TetrisController, win: Window): Clippi
     val width = win.innerWidth
     val height = win.innerHeight
     val cellSize = kotlin.math.min(
-        (width - borderSize * 2) / controller.width,
-        (height - borderSize * 2) / controller.height
-    )
-    return Clipping(
-        cellSize = cellSize,
-        cellPadding = (cellSize * 0.1).toInt()
-    )
+        (width - borderSize * 2) / (controller.width + paddingFraction),
+        (height - borderSize * 2) / (controller.height + paddingFraction)
+    ).toInt()
+    val padding = (cellSize * paddingFraction).toInt()
+    return Clipping(cellSize = cellSize, cellPadding = padding)
 }
 
 private fun resizeCanvas(controller: TetrisController, clipping: Clipping, canvas: HTMLCanvasElement) {
-    canvas.width = clipping.cellSize * controller.width
-    canvas.height = clipping.cellSize * controller.height
+    canvas.width = clipping.cellSize * controller.width + borderSize * 2 + clipping.cellPadding
+    canvas.height = clipping.cellSize * controller.height + borderSize * 2 + clipping.cellPadding
 }
 
 private fun milliTime(): Long {
@@ -44,16 +43,23 @@ private fun milliTime(): Long {
 private fun repaint(controller: TetrisController, clipping: Clipping, canvasCtx: CanvasRenderingContext2D) {
     val cellSize = clipping.cellSize.toDouble()
     val cellPadding = clipping.cellPadding.toDouble()
-    val pxWidth = controller.width * cellSize
-    val pxHeight = controller.height * cellSize
 
     canvasCtx.fillStyle = "black"
-    canvasCtx.fillRect(0.0, 0.0, pxWidth, pxHeight)
+    canvasCtx.fillRect(
+        0.0,
+        0.0,
+        controller.width * cellSize + borderSize * 2 + cellPadding,
+        controller.height * cellSize + borderSize * 2 + cellPadding
+    )
 
     canvasCtx.strokeStyle = "gray"
     canvasCtx.lineWidth = borderSize.toDouble()
 
-    canvasCtx.strokeRect(borderSize / 2.0, borderSize / 2.0, pxWidth - borderSize, pxHeight - borderSize)
+    canvasCtx.strokeRect(
+        borderSize / 2.0,
+        borderSize / 2.0,
+        controller.width * cellSize + borderSize + cellPadding,
+        controller.height * cellSize + borderSize + cellPadding)
 
     canvasCtx.lineWidth = 1.0
 
