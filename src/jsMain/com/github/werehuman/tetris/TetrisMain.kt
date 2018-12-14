@@ -7,6 +7,7 @@ import org.w3c.dom.*
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.KeyboardEvent
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.min
 
 const val borderSize: Int = 3
@@ -258,13 +259,14 @@ actual object TetrisMain {
 
         fun worker() {
             controller.proceed(milliTime())?.let { (durationMillis, changed) ->
+                val handleStart = milliTime()
                 if (changed) {
                     repaint(controller, calculateClipping(controller, win), canvasCtx)
                 }
                 touchTracker?.let {
                     controller.pressedAction = it.onNothing()
                 }
-                win.setTimeout({ worker() }, durationMillis.toInt())
+                win.setTimeout({ worker() }, max(0, (handleStart - milliTime() + durationMillis).toInt()))
             }
         }
 
